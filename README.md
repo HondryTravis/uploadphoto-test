@@ -6,3 +6,5 @@
 - bash here 
 - anywhere 
 - 查看console
+
+*觉得好的给个星哦，原生js* 
