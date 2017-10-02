@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>图片上传</title>
+</head>
+
+<body>
+  <input type="file" id="file_pic" name="image" accept="image/*" onchange="change_pic(event)">
+</body>
+<script>
+  const imgInfo = {};
+
+
+  function change_pic(event) {
+    // 获取当前选中文件
+    const file = event.target.files[0];
+    // 设置图片最大尺寸
+    const imgMaxSize = 1024 * 1024 * 10;
+
+
+    // 检查文件类型
+    if (['jpeg', 'jpg', 'png', 'gif'].indexOf(file.type.split('/')[1]) < 0) {
+      // 自定义报错方式  
+      console.log('图片格式不正确');
+      return;
+    }
+
+    // 图片大小超过限制
+    if (file.size > imgMaxSize) {
+      // 自定义报错方式
+      console.log('图片太大了');
+      return;
+    }
+    // 判断是否ios
+    if (!!window.navigator.userAgent.match(/\(i[^;]+;( U;)? CPU.+Mac OS X/)) {
+      // 是 ios
+      insertFormData(file);
+      return;
+    }
+
+    // 开始图片压缩之旅
+    fileToDataUrl(file);
+  }
+
+
+  function insertFormData(file) {
+    // 新建form对象
+    const formData = new FormData();
+    // 自定义form对象中的内容
+    // type
+    formData.append('type', file.type);
+    // size 
+    formData.append('size', file.size || "image/jpeg");
+    // name 
+    formData.append('name', file.name);
+    // 最后修改时间
+    formData.append('lastModifiedDate', file.lastModifiedDate);
+    // 添加文件
+    formData.append('file', file);
+    console.log(file)
+    // 上传图片
+    // uploader(formData);
+    fileToDataUrl(file);
+  }
+
+
+  function fileToDataUrl(file) {
+    // 超过200k就压缩
+    const imgCompressMAX_SIZE = 200 * 1024;
+    // 组装相关文件数据
+    imgInfo.type = file.type || "image/jpeg"; // 部分安卓机使用不了
+    imgInfo.size = file.size;
+    imgInfo.name = file.name;
+    imgInfo.lastModifiedDate = file.lastModifiedDate;
+
+    // 使用filereader对象的函数
+    const reader = new FileReader();
+
+    // file 转换dataURL是一个异步函数，需要写在回调函数中
+
+    reader.onload = function (e) {
+      const result = e.target.result;
+      // 如果大于imgCompressMAX_SIZE 就压缩
+      result.length < imgCompressMAX_SIZE ? compress(result, false) : compress(result)
+    }
+    reader.readAsDataURL(file);
+  }
+
+
+  // canvas压缩图片
+  function compress(dataUrl, shouldCompress = true) {
+    const img = new window.Image();
+
+    img.src = dataUrl;
+    console.log(img.src.length)
+
+    img.onload = function () {
+      // 开始绘制图片
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+
+      canvas.width = img.width;
+      canvas.height = img.height;
+
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+      // 压缩过后图片的url
+      let compressedDataUrl;
+      shouldCompress = true ? compressedDataUrl = canvas.toDataURL(imgInfo.type, 0.2) : compressedDataUrl = canvas.toDataURL(
+        imgInfo.type, 0.2)
+      // if(shouldCompress) {
+      //   console.log(canvas)
+      //   compressedDataUrl = canvas.toDataURL(imgInfo.type, 0.2);
+      // } else {
+      //   compressedDataUrl = canvas.toDataURL(imgInfo.type, 1);
+      // }
+      console.log(compressedDataUrl);
+    }
+    
+  }
+
+
+  // function processData(dataUrl) {
+  //   // 使用二进制处理图片
+  //   const binaryString = window.atob(dataUrl.split(',')[1]);
+  //   console.log(binaryString);
+  //   const arrayBuffer = new ArrayBuffer(binaryString.length);
+  //   console.log(arrayBuffer);
+  //   const intArray = new Uint8Array(arrayBuffer);
+  //   console.log(intArray);
+  //   const imgFile = this.imgFile;
+
+  //   for (let i = 0, j = binaryString.length; i < j; i++) {
+  //       intArray[i] = binaryString.charCodeAt(i);
+  //   }
+
+  //   const data = [intArray];
+
+  //   let blob;
+
+  //   try {
+  //     blob = new Blob(data, { type: imgFile.type });
+  //   } catch(error){
+  //     window.BlobBuilder = window.BlobBuilder ||
+  //                          window.WebKitBlobBuilder ||
+  //                          window.MozBlobBuilder ||
+  //                          window.MSBlobBuilder;
+  //       if (error.name === 'TypeError' && window.BlobBuilder){
+  //           const builder = new BlobBuilder();
+  //           builder.append(arrayBuffer);
+  //           blob = builder.getBlob(imgFile.type);
+  //       } else {
+  //           // Toast.error("版本过低，不支持上传图片", 2000, undefined, false);
+  //           throw new Error('版本过低，不支持上传图片');
+  //       }
+  //   }
+
+  //   // blob 对象转换未file
+  //   const fileOfBlob = new File([blob], imgFile.name);
+  //   const formData   = new FormData();
+
+  //   // type
+  //   formData.append('type', imgFile.type);
+  //   // size
+  //   formData.append('size', fileOfBlob.size);
+  //   // name
+  //   formData.append('name', imgFile.name);
+  //   // lastModifiedDate
+  //   formData.append('lastModifiedDate', imgFile.lastModifiedDate);
+  //   // append 文件
+  //   formData.append('file', fileOfBlob);
+
+
+    
+  //   uploader(formData);
+  //   console.log(formData);
+  // }
+
+
+
+// 上传图片
+// function uploadImg (formData) {
+//     const xhr = new XMLHttpRequest();
+//     // 进度监听
+//     xhr.upload.addEventListener('progress', (e)=>{console.log(e.loaded / e.total)}, false);
+//     // 加载监听
+//     // xhr.addEventListener('load', ()=>{console.log("加载中");}, false);
+//     // 错误监听
+//     xhr.addEventListener('error', ()=>{Toast.error("上传失败！", 2000, undefined, false);}, false);
+//     xhr.onreadystatechange = function () {
+//         if (xhr.readyState === 4) {
+//             const result = JSON.parse(xhr.responseText);
+//             if (xhr.status === 200) {
+//                 // 上传成功
+                
+
+//             } else {
+//                 // 上传失败
+//             }
+//         }
+//     };
+//     xhr.open('POST', '/uploadUrl' , true);
+//     xhr.send(formData);
+// }
+
+
+
+  function  uploader(formData) {
+    console.log(formData)
+    ajax({
+      method: 'post',
+      url: '',
+      data: formData,
+      success: function (resp) {
+        console.log(resp);
+      },
+      async: true
+    });
+  }
+
+
+
+
+
+
+
+
+
+
+
+  function createXHR() {
+    if (typeof XMLHttpRequest != 'undefined') {
+      return new XMLHttpRequest();
+    } else if (typeof ActiveXObject != 'undefined') {
+      var version = [
+        'MSXML2.XMLHttp.6.0',
+        'MSXML2.XMLHttp.3.0',
+        'MSXML2.XMLHttp'
+      ];
+      for (var i = 0; version.length; i++) {
+        try {
+          return new ActiveXObject(version[i]);
+        } catch (e) {
+          //跳过
+        }
+      }
+    } else {
+      throw new Error('您的系统或浏览器不支持XHR对象！');
+    }
+  }
+
+  //名值对转换为字符串
+  function params(data) {
+    var arr = [];
+    for (var i in data) {
+      arr.push(encodeURIComponent(i) + '=' + encodeURIComponent(data[i]));
+    }
+    return arr.join('&');
+  }
+
+
+  //封装ajax
+  function ajax(obj) {
+    var xhr = createXHR();
+    obj.url = obj.url + '?rand=' + Math.random();
+    obj.data = params(obj.data);
+    if (obj.method === 'get') obj.url += obj.url.indexOf('?') == -1 ? '?' + obj.data : '&' + obj.data;
+    if (obj.async === true) {
+      xhr.onreadystatechange = function () {
+        if (xhr.readyState == 4) {
+          callback();
+        }
+      };
+    }
+    xhr.open(obj.method, obj.url, obj.async);
+    if (obj.method === 'post') {
+      xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+      xhr.send(obj.data);
+    } else {
+      xhr.send(null);
+    }
+    if (obj.async === false) {
+      callback();
+    }
+
+    function callback() {
+      if (xhr.status == 200) {
+        obj.success(xhr.responseText); //回调传递参数
+      } else {
+        console.log('获取数据错误！错误代号：' + xhr.status + '，错误信息：' + xhr.statusText);
+      }
+    }
+  }
+
+  function addEvent(obj, type, fn) {
+    if (obj.addEventListener) {
+      obj.addEventListener(type, fn, false);
+    } else if (obj.attachEvent) {
+      obj.attachEvent('on' + type, function () {
+        fn.call(obj);
+      });
+    }
+  }
+
+  function removeEvent(obj, type, fn) {
+    if (obj.removeEventListener) {
+      obj.removeEventListener(type, fn, false);
+    } else if (obj.detachEvent) {
+      obj.detachEvent('on' + type, fn);
+    }
+  }
+
+
+</script>
+
+</html>
